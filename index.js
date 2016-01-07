@@ -40,7 +40,7 @@ my_sheet.useServiceAccountAuth(creds, function (err) {
       orderby: 'name'  // column to order results by
     }, function (err, row_data) {
       if (err) { }
-      console.log('names', _.getpath(row_data, '[].name'))
+      console.log('names', _.getPath(row_data, '[].name'))
     })
   })
 })
