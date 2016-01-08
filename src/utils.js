@@ -1,13 +1,13 @@
 'use strict'
 
-var _ = require('lodash-getpath')
-var co = require('co')
-var BPromise = require('bluebird')
-var _p = BPromise.promisify
+const _ = require('lodash-getpath')
+const co = require('co')
+const BPromise = require('bluebird')
+const _p = BPromise.promisify
 
 function getColumnData (sheet) {
-  // var getRows_p = _p(sheet1.getRows)
-  var getCells_p = _p(sheet.getCells)
+  // const getRows_p = _p(sheet1.getRows)
+  const getCells_p = _p(sheet.getCells)
 
   return co(function *() {
     console.log('getColumnData')

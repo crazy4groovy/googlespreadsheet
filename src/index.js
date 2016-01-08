@@ -1,23 +1,23 @@
 'use strict'
 
-var utils = require('./utils')
-var GoogleSpreadsheet = require('google-spreadsheet')
-var _ = require('lodash-getpath')
-var co = require('co')
-var BPromise = require('bluebird')
-var _p = BPromise.promisify
+const utils = require('./utils')
+const GoogleSpreadsheet = require('google-spreadsheet')
+const _ = require('lodash-getpath')
+const co = require('co')
+const BPromise = require('bluebird')
+const _p = BPromise.promisify
 
 // With auth -- read + write
-var creds = require('../google-generated-creds.json')
+const creds = require('../google-generated-creds.json')
 
 // spreadsheet key is the long id in the sheets URL
-var my_sheet = new GoogleSpreadsheet('1fyGsYhinmTRNpJyw_uVDpI3wYmWz9FXIYgR2DuobZ_w')
+const my_sheet = new GoogleSpreadsheet('1fyGsYhinmTRNpJyw_uVDpI3wYmWz9FXIYgR2DuobZ_w')
 // https://docs.google.com/spreadsheets/d/1fyGsYhinmTRNpJyw_uVDpI3wYmWz9FXIYgR2DuobZ_w/edit
 
 my_sheet.useServiceAccountAuth(creds, err => {
   if (err) { }
 
-  var getInfo_p = _p(my_sheet.getInfo)
+  const getInfo_p = _p(my_sheet.getInfo)
 
   getInfo_p()
   .then(sheet_info => {
@@ -31,8 +31,8 @@ my_sheet.useServiceAccountAuth(creds, err => {
     return sheet_info.worksheets[0]
   })
   .then(sheet1 => {
-    var getRows_p = _p(sheet1.getRows)
-    var addRow_p = _p(sheet1.addRow)
+    const getRows_p = _p(sheet1.getRows)
+    const addRow_p = _p(sheet1.addRow)
 
     // async block #1 /////////////////////////////////////
     utils.getColumnData(sheet1)
@@ -48,7 +48,7 @@ my_sheet.useServiceAccountAuth(creds, err => {
     .then(data => console.log(`saved name: ${data['gsx:name']}`))
     .then(() => addRow_p({ name: Math.random() }))
     .then(data => console.log(`added name: ${data.title}`))
-    .then(() => getRows_p({ start: 1, num: 100, orderby: 'name' }))
+    .then(() => getRows_p({ start: 1, num: 10, orderby: 'name' }))
     .then(rows => {
       console.log('names: ', _.getPath(rows, '[].name'))
       console.log('ages: ', _.getPath(rows, '[].age'))
@@ -60,6 +60,7 @@ my_sheet.useServiceAccountAuth(creds, err => {
     // async block #2 /////////////////////////////////////
     co(function *() {
       let cols, rows, data
+
       try {
         cols = yield utils.getColumnData(sheet1)
         console.log('>co cols: ' + cols)
