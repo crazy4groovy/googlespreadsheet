@@ -1,9 +1,10 @@
 'use strict'
 
+var utils = require('./utils')
 var GoogleSpreadsheet = require('google-spreadsheet')
 var _ = require('lodash-getpath')
+var co = require('co')
 var BPromise = require('bluebird')
-var utils = require('./utils')
 var _p = BPromise.promisify
 
 // With auth -- read + write
@@ -30,28 +31,48 @@ my_sheet.useServiceAccountAuth(creds, err => {
     return sheet_info.worksheets[0]
   })
   .then(sheet1 => {
-    console.log(utils.getColumnData(sheet1))
-
     var getRows_p = _p(sheet1.getRows)
     var addRow_p = _p(sheet1.addRow)
 
-    getRows_p()
+    // async block #1 /////////////////////////////////////
+    utils.getColumnData(sheet1)
+    .then(columns => { console.log('cols: ' + columns) })
+    .then(() => getRows_p())
     .then(rows => {
-      console.log(`length: ${rows.length}`)
+      console.log(`start length: ${rows.length}`)
+      // update name in row 1
       rows[0].Name = `A${Date.now()}`
-      return _p(rows[0].save)()
-      // rows[0].del()  // async and takes a callback
+      return _p(rows[0].save)() // return the promise
+      // rows[0].del()  // async, takes a callback
     })
     .then(data => console.log(`saved name: ${data['gsx:name']}`))
     .then(() => addRow_p({ name: Math.random() }))
     .then(data => console.log(`added name: ${data.title}`))
-    .then(() => getRows_p({
-      start: 1,       // start index
-      num: 100,         // number of rows to pull
-      orderby: 'name'  // column to order results by
-    }))
-    .then(row_data => console.log('names: ', _.getPath(row_data, '[].name')))
-    .then(() => getRows_p())
-    .then(rows => console.log(`length: ${rows.length}`))
+    .then(() => getRows_p({ start: 1, num: 100, orderby: 'name' }))
+    .then(rows => {
+      console.log('names: ', _.getPath(rows, '[].name'))
+      console.log('ages: ', _.getPath(rows, '[].age'))
+      console.log('all: ', rows.map(d => `${d.name} : ${d.age}`))
+      console.log(`end length: ${rows.length}`)
+    })
+    .catch(err => console.log(err))
+
+    // async block #2 /////////////////////////////////////
+    co(function *() {
+      let cols, rows, data
+      try {
+        cols = yield utils.getColumnData(sheet1)
+        console.log('>co cols: ' + cols)
+        rows = yield getRows_p()
+        console.log(`>co start length: ${rows.length}`)
+        data = yield addRow_p({ name: Math.random(), age: Date.now() / (1 * 1000 * 1000 * 1000) | 0 })
+        console.log(`>co added name: ${data.title}`)
+        rows = yield getRows_p({ start: 1, num: 10, orderby: 'name' })
+        console.log('>co names: ', _.getPath(rows, '[].name'))
+        console.log('>co ages: ', _.getPath(rows, '[].age'))
+        console.log('>co all: ', rows.map(d => `${d.name} : ${d.age}`))
+        console.log(`>co end length: ${rows.length}`)
+      } catch (err) { console.log(err) }
+    })
   })
 })
